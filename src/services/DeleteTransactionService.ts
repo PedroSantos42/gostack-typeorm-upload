@@ -1,6 +1,6 @@
-// import AppError from '../errors/AppError';
-
 import { getCustomRepository } from 'typeorm';
+import AppError from '../errors/AppError';
+
 import TransactionsRepository from '../repositories/TransactionsRepository';
 
 interface Request {
@@ -10,7 +10,14 @@ interface Request {
 class DeleteTransactionService {
   public async execute({ id }: Request): Promise<void> {
     const transactionsRepository = getCustomRepository(TransactionsRepository);
-    await transactionsRepository.delete({ id });
+
+    const transaction = await transactionsRepository.findOne(id);
+
+    if (!transaction) {
+      throw new AppError('Transaction does no exist');
+    }
+
+    await transactionsRepository.remove(transaction);
   }
 }
 

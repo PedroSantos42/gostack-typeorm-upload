@@ -1,17 +1,17 @@
 import { Router } from 'express';
 
 import { getCustomRepository } from 'typeorm';
+
 import multer from 'multer';
-// import parser from 'csv-parse';
+import uploadConfig from '../configs/upload';
 
 import TransactionsRepository from '../repositories/TransactionsRepository';
 import CreateTransactionService from '../services/CreateTransactionService';
 import DeleteTransactionService from '../services/DeleteTransactionService';
-// import ImportTransactionsService from '../services/ImportTransactionsService';
-import Transaction from '../models/Transaction';
+import ImportTransactionsService from '../services/ImportTransactionsService';
 
 const transactionsRouter = Router();
-const upload = multer();
+const upload = multer(uploadConfig);
 
 transactionsRouter.get('/', async (request, response) => {
   try {
@@ -57,7 +57,9 @@ transactionsRouter.delete('/:id', async (request, response) => {
 
     return response.status(204).send();
   } catch (err) {
-    return response.status(400).json({ error: err.message });
+    return response
+      .status(err.statusCode)
+      .json({ error: 'error', message: err.message });
   }
 });
 
@@ -66,17 +68,16 @@ transactionsRouter.post(
   upload.single('file'),
   async (request, response) => {
     try {
-      const { file } = request;
+      const importTransactions = new ImportTransactionsService();
 
-      console.log(file);
+      const transactions = await importTransactions.execute(request.file.path);
 
-      const transactions: Transaction[] = [];
-
-      transactions;
-
-      return response.json({ filename: file.originalname });
+      return response.json({ transactions });
     } catch (err) {
-      return response.status(400).json({ error: err.message });
+      return response.status(err.statusCode).json({
+        status: 'error',
+        message: err.message,
+      });
     }
   },
 );
